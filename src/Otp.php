@@ -4,20 +4,20 @@ namespace Ichtrojan\Otp;
 
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Config;
 use Ichtrojan\Otp\Models\Otp as Model;
 
 class Otp
 {
     /**
-     * @param string $identifier
-     * @param string $type
-     * @param int $length
-     * @param int $validity
-     * @return mixed
-     * @throws Exception
+     * Generate a new OTP
      */
-    public function generate(string $identifier, string $type, int $length = 4, int $validity = 10) : object
+    public function generate(string $identifier, string $type, int $length = null, int $validity = null): object
     {
+        $length = $length ?? Config::get('otp.length', 6);
+        $validity = $validity ?? Config::get('otp.expiry', 10);
+
+        // Remove existing valid tokens for this identifier
         Model::where('identifier', $identifier)->where('valid', true)->delete();
 
         switch ($type) {
@@ -37,7 +37,7 @@ class Otp
             'validity' => $validity
         ]);
 
-        return (object)[
+        return (object) [
             'status' => true,
             'token' => $token,
             'message' => 'OTP generated'
@@ -45,93 +45,76 @@ class Otp
     }
 
     /**
-     * @param string $identifier
-     * @param string $token
-     * @return bool
+     * Check if the OTP is valid without invalidating it
      */
     public function isValid(string $identifier, string $token): bool
     {
         $otp = Model::where('identifier', $identifier)->where('token', $token)->first();
 
         if ($otp instanceof Model) {
-            $validity = $otp->created_at->addMinutes($otp->validity);
-
-            return Carbon::now()->lt($validity) && $otp->valid;
+            $validUntil = $otp->created_at->addMinutes($otp->validity);
+            return Carbon::now()->lt($validUntil) && $otp->valid;
         }
 
         return false;
     }
 
     /**
-     * @param string $identifier
-     * @param string $token
-     * @return mixed
+     * Validate and invalidate the OTP
      */
     public function validate(string $identifier, string $token): object
     {
         $otp = Model::where('identifier', $identifier)->where('token', $token)->first();
 
-        if ($otp instanceof Model) {
-            if ($otp->valid) {
-                $now = Carbon::now();
-                $validity = $otp->created_at->addMinutes($otp->validity);
-
-                $otp->update(['valid' => false]);
-
-                if (strtotime($validity) < strtotime($now)) {
-                    return (object)[
-                        'status' => false,
-                        'message' => 'OTP Expired'
-                    ];
-                }
-
-                $otp->update(['valid' => false]);
-
-                return (object)[
-                    'status' => true,
-                    'message' => 'OTP is valid'
-                ];
-            }
-
-            $otp->update(['valid' => false]);
-
-            return (object)[
-                'status' => false,
-                'message' => 'OTP is not valid'
-            ];
-        } else {
-            return (object)[
+        if (!$otp instanceof Model) {
+            return (object) [
                 'status' => false,
                 'message' => 'OTP does not exist'
             ];
         }
+
+        if (!$otp->valid) {
+            return (object) [
+                'status' => false,
+                'message' => 'OTP is not valid'
+            ];
+        }
+
+        $otp->update(['valid' => false]); // Always invalidate after attempt
+
+        $validUntil = $otp->created_at->addMinutes($otp->validity);
+        if (Carbon::now()->gt($validUntil)) {
+            return (object) [
+                'status' => false,
+                'message' => 'OTP expired'
+            ];
+        }
+
+        return (object) [
+            'status' => true,
+            'message' => 'OTP is valid'
+        ];
     }
 
     /**
-     * @param int $length
-     * @return string
-     * @throws Exception
+     * Generate a numeric token
      */
-    private function generateNumericToken(int $length = 4): string
+    private function generateNumericToken(int $length = 6): string
     {
-        $i = 0;
-        $token = "";
-
-        while ($i < $length) {
+        $token = '';
+        for ($i = 0; $i < $length; $i++) {
             $token .= random_int(0, 9);
-            $i++;
         }
-
         return $token;
     }
 
     /**
-     * @param int $length
-     * @return string
+     * Generate an alphanumeric token
      */
-    private function generateAlphanumericToken(int $length = 4): string
+    private function generateAlphanumericToken(int $length = 6): string
     {
-        $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
-        return substr(str_shuffle($characters), 0, $length);
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        return substr(str_shuffle(str_repeat($characters, $length)), 0, $length);
     }
+
 }

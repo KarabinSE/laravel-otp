@@ -22,8 +22,8 @@ php artisan migrate
 
 ## Usage 🧨
 
->**NOTE**</br>
->Response are returned as objects. You can access its attributes with the arrow operator (`->`)
+> **NOTE**</br>
+> Response are returned as objects. You can access its attributes with the arrow operator (`->`)
 
 ### Generate OTP
 
@@ -35,10 +35,10 @@ use Ichtrojan\Otp\Otp;
 (new Otp)->generate(string $identifier, string $type, int $length = 4, int $validity = 10);
 ```
 
-* `$identifier`: The identity that will be tied to the OTP.
-* `$type`: The type of token to be generated, supported types are `numeric` and `alpha_numeric`
-* `$length (optional | default = 4)`: The length of token to be generated.
-* `$validity (optional | default = 10)`: The validity period of the OTP in minutes.
+- `$identifier`: The identity that will be tied to the OTP.
+- `$type`: The type of token to be generated, supported types are `numeric` and `alpha_numeric`
+- `$length (optional | default = 4)`: The length of token to be generated.
+- `$validity (optional | default = 10)`: The validity period of the OTP in minutes.
 
 #### Sample
 
@@ -70,8 +70,8 @@ use Ichtrojan\Otp\Otp;
 (new Otp)->validate(string $identifier, string $token)
 ```
 
-* `$identifier`: The identity that is tied to the OTP.
-* `$token`: The token tied to the identity.
+- `$identifier`: The identity that is tied to the OTP.
+- `$token`: The token tied to the identity.
 
 #### Sample
 
@@ -103,7 +103,7 @@ use Ichtrojan\Otp\Otp;
 }
 ```
 
-**Not Valid***
+**Not Valid\***
 
 ```object
 {
@@ -135,11 +135,15 @@ use Ichtrojan\Otp\Otp;
 This will return a boolean value of the validity of the OTP.
 
 ### Delete expired tokens
+
 You can delete expired tokens by running the following artisan command:
+
 ```bash
 php artisan otp:clean
 ```
-You can also add this artisan command to `app/Console/Kernel.php` to automatically clean on scheduled 
+
+You can also add this artisan command to `app/Console/Kernel.php` to automatically clean on scheduled
+
 ```php
 <?php
 
