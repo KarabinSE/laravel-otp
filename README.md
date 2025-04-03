@@ -4,20 +4,49 @@
 
 ## Introduction 🖖
 
-This is a simple package to generate and validate OTPs (One Time Passwords). This can be implemented mostly in Authentication.
+This is a simple package to generate and validate OTPs (One Time Passwords). It can be used in authentication systems, two-factor verification, and more.
 
-## Installation 💽
+---
 
-Install via composer
+## Installation
+
+Install via composer:
 
 ```bash
 composer require ichtrojan/laravel-otp
 ```
 
-Run Migrations
+## One-Step Install (Recommended)
+
+Run this command to publish both the config and migration files:
+
+```bash
+php artisan otp:install
+```
+
+Then Run
 
 ```bash
 php artisan migrate
+```
+
+## Configuration
+
+You can customize OTP behavior by editing the published config file:
+
+```bash
+php artisan vendor:publish --tag=otp-config
+```
+
+config/otp.php:
+
+```php
+return [
+    'table' => env('OTP_TABLE', 'otps'), // OTP table name
+    'length' => 6,                        // OTP digit/character length
+    'expiry' => 10,                       // Validity in minutes
+    'max_attempts' => 3,                  // Optional: max retries (for future use)
+];
 ```
 
 ## Usage 🧨
