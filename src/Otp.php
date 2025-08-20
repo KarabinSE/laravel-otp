@@ -5,10 +5,15 @@ namespace Ichtrojan\Otp;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Config;
-use Ichtrojan\Otp\Models\Otp as Model;
 
 class Otp
 {
+    public $model;
+
+    public function __construct() {
+        $this->model = Config::get('otp.model');
+    }
+
     /**
      * Generate a new OTP
      */
@@ -18,7 +23,7 @@ class Otp
         $validity = $validity ?? Config::get('otp.expiry', 10);
 
         // Remove existing valid tokens for this identifier
-        Model::where('identifier', $identifier)->where('valid', true)->delete();
+        $this->model->where('identifier', $identifier)->where('valid', true)->delete();
 
         switch ($type) {
             case "numeric":
@@ -31,7 +36,7 @@ class Otp
                 throw new Exception("{$type} is not a supported type");
         }
 
-        Model::create([
+        $this->model->create([
             'identifier' => $identifier,
             'token' => $token,
             'validity' => $validity
@@ -49,7 +54,7 @@ class Otp
      */
     public function isValid(string $identifier, string $token): bool
     {
-        $otp = Model::where('identifier', $identifier)->where('token', $token)->first();
+        $otp = $this->model->where('identifier', $identifier)->where('token', $token)->first();
 
         if ($otp instanceof Model) {
             $validUntil = $otp->created_at->addMinutes($otp->validity);
@@ -64,7 +69,7 @@ class Otp
      */
     public function validate(string $identifier, string $token): object
     {
-        $otp = Model::where('identifier', $identifier)->where('token', $token)->first();
+        $otp = $this->model->where('identifier', $identifier)->where('token', $token)->first();
 
         if (!$otp instanceof Model) {
             return (object) [
